@@ -32,7 +32,9 @@ public class SearchBackendFactory {
                 }
                 String modelName = environment.getProperty(
                         "spring.ai.ollama.embedding.options.model", "ollama default");
-                yield new EmbeddingBackend(model, modelName);
+                yield new EmbeddingBackend(model, modelName,
+                        properties.getRetrieval().getQueryPrefix(),
+                        properties.getRetrieval().getDocumentPrefix());
             }
             default -> throw new IllegalStateException(
                     "Unknown schemanav.retrieval.backend: " + backend

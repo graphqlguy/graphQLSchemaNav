@@ -44,10 +44,24 @@ public class SchemaNavProperties {
         /** bm25 or embedding. */
         private String backend = "bm25";
         private int topK = 10;
+        /**
+         * Instruction-tuned embedding models embed questions and corpus text differently.
+         * These prefixes reproduce sentence-transformers' prompt_name="query" and
+         * prompt_name="document": each is prepended verbatim before embedding. The
+         * defaults are the fine-tuned GraphQL model's own configuration (documents get
+         * no prefix). An index built with the wrong prompt silently underperforms.
+         */
+        private String queryPrefix =
+                "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:";
+        private String documentPrefix = "";
         public String getBackend() { return backend; }
         public void setBackend(String backend) { this.backend = backend; }
         public int getTopK() { return topK; }
         public void setTopK(int topK) { this.topK = topK; }
+        public String getQueryPrefix() { return queryPrefix; }
+        public void setQueryPrefix(String queryPrefix) { this.queryPrefix = queryPrefix; }
+        public String getDocumentPrefix() { return documentPrefix; }
+        public void setDocumentPrefix(String documentPrefix) { this.documentPrefix = documentPrefix; }
     }
 
     public static class Tokens {
