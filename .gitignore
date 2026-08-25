@@ -4,3 +4,8 @@ target/
 .DS_Store
 # Fetched on demand by scripts/fetch-github-schema.sh; check terms before committing.
 schemas/github.graphqls
+# WG benchmark data, fetched by scripts/fetch-wg-benchmark.sh (unmerged PR content)
+schemas/github-wg.graphqls
+benchmarks/github-wg.tsv
+.wg-cache/
+.embcache/

@@ -85,19 +85,32 @@ public class SchemaNavApplication {
                     System.out.println("backend : " + backend.name() + ", corpus format " + format);
                     System.out.println("query   : " + question);
                     System.out.println();
-                    List<SearchHit> hits = backend.search(question, properties.getRetrieval().getTopK());
+                    int budget = properties.getRetrieval().getContextBudgetTokens();
+                    List<SearchHit> hits = backend.search(question,
+                            budget > 0 ? BenchmarkRunner.RETRIEVAL_DEPTH
+                                       : properties.getRetrieval().getTopK());
                     int payloadTokens = 0;
-                    for (int i = 0; i < hits.size(); i++) {
-                        SearchHit hit = hits.get(i);
+                    int shown = 0;
+                    for (SearchHit hit : hits) {
+                        if (budget > 0 && payloadTokens + hit.snippetTokens() > budget) {
+                            break;
+                        }
                         payloadTokens += hit.snippetTokens();
+                        shown++;
                         System.out.printf("%2d. %-40s score %.3f  [%d tokens]%n",
-                                i + 1, hit.coordinate(), hit.score(), hit.snippetTokens());
+                                shown, hit.coordinate(), hit.score(), hit.snippetTokens());
                         System.out.println("    " + hit.snippet().replace("\n", "\n    "));
                     }
                     System.out.println();
-                    System.out.println("result payload: " + payloadTokens + " tokens ("
-                            + tokenMeter.encodingName() + "); reading these hits is what the"
-                            + " search costs an agent.");
+                    if (budget > 0) {
+                        System.out.println("context budget: " + budget + " tokens; " + shown
+                                + " hits fit, using " + payloadTokens + " tokens ("
+                                + tokenMeter.encodingName() + ").");
+                    } else {
+                        System.out.println("result payload: " + payloadTokens + " tokens ("
+                                + tokenMeter.encodingName() + "); reading these hits is what the"
+                                + " search costs an agent.");
+                    }
                 }
                 case "bench" -> {
                     Path file = Path.of(args.length > 1 ? args[1] : properties.getBench().getFile());
@@ -108,7 +121,8 @@ public class SchemaNavApplication {
                     System.out.println("corpus  : format " + format + ", " + corpus.size() + " coordinates");
                     System.out.println("bench   : " + file + ", " + queries.size() + " labelled queries");
                     System.out.println();
-                    BenchmarkRunner.Result result = benchmarkRunner.run(backend, queries, 10);
+                    BenchmarkRunner.Result result = benchmarkRunner.run(
+                            backend, queries, properties.getBench().getBudgets());
                     System.out.println(benchmarkRunner.format(result));
                 }
                 default -> System.out.println("Unknown command: " + command);

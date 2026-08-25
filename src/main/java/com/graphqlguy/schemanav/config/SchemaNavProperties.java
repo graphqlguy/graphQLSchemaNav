@@ -45,6 +45,13 @@ public class SchemaNavProperties {
         private String backend = "bm25";
         private int topK = 10;
         /**
+         * When above zero, the search command returns only as many hits as fit in this
+         * many tokens instead of a fixed top-k. Shrinking it on any schema reproduces
+         * the pressure a huge schema puts on a normal context window: big schema,
+         * small brain, as a dial.
+         */
+        private int contextBudgetTokens = 0;
+        /**
          * Instruction-tuned embedding models embed questions and corpus text differently.
          * These prefixes reproduce sentence-transformers' prompt_name="query" and
          * prompt_name="document": each is prepended verbatim before embedding. The
@@ -62,6 +69,8 @@ public class SchemaNavProperties {
         public void setQueryPrefix(String queryPrefix) { this.queryPrefix = queryPrefix; }
         public String getDocumentPrefix() { return documentPrefix; }
         public void setDocumentPrefix(String documentPrefix) { this.documentPrefix = documentPrefix; }
+        public int getContextBudgetTokens() { return contextBudgetTokens; }
+        public void setContextBudgetTokens(int contextBudgetTokens) { this.contextBudgetTokens = contextBudgetTokens; }
     }
 
     public static class Tokens {
@@ -76,9 +85,16 @@ public class SchemaNavProperties {
     }
 
     public static class Bench {
-        /** Tab-separated file: natural-language question, expected Type.field coordinate. */
+        /**
+         * Tab-separated file: natural-language question, then the expected Type.field
+         * coordinates separated by commas.
+         */
         private String file = "benchmarks/moviedb-sample.tsv";
+        /** The context budgets (in tokens) the benchmark sweeps. */
+        private java.util.List<Integer> budgets = java.util.List.of(125, 250, 500, 1000, 2000);
         public String getFile() { return file; }
         public void setFile(String file) { this.file = file; }
+        public java.util.List<Integer> getBudgets() { return budgets; }
+        public void setBudgets(java.util.List<Integer> budgets) { this.budgets = budgets; }
     }
 }
