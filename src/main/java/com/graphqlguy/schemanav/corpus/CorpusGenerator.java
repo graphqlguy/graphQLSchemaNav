@@ -2,6 +2,8 @@ package com.graphqlguy.schemanav.corpus;
 
 import com.graphqlguy.schemanav.tokens.TokenMeter;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLFieldsContainer;
+import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
@@ -13,9 +15,11 @@ import java.util.List;
 
 /**
  * Walks the schema and emits one corpus entry per field coordinate, in the configured
- * format. Object types are covered, including the Query and Mutation roots, whose
- * fields are the operations an agent ultimately wants to find. Introspection's own
- * __-prefixed types are skipped.
+ * format. Object and interface types are covered (interfaces matter on real schemas:
+ * GitHub's leans on Node, Actor, and friends), including the Query and Mutation
+ * roots, whose fields are the operations an agent ultimately wants to find.
+ * Introspection's own __-prefixed types are skipped. This is the same field space
+ * the AI Working Group's evaluation snapshot indexes.
  */
 @Component
 public class CorpusGenerator {
@@ -29,23 +33,23 @@ public class CorpusGenerator {
     public List<CorpusEntry> generate(GraphQLSchema schema, CorpusFormat format) {
         List<CorpusEntry> entries = new ArrayList<>();
         for (GraphQLNamedType type : schema.getAllTypesAsList()) {
-            if (!(type instanceof GraphQLObjectType objectType)) {
+            boolean fieldsContainer = type instanceof GraphQLObjectType
+                    || type instanceof GraphQLInterfaceType;
+            if (!fieldsContainer || type.getName().startsWith("__")) {
                 continue;
             }
-            if (objectType.getName().startsWith("__")) {
-                continue;
-            }
-            for (GraphQLFieldDefinition field : objectType.getFieldDefinitions()) {
-                String coordinate = objectType.getName() + "." + field.getName();
-                String text = render(objectType, field, coordinate, format);
+            GraphQLFieldsContainer owner = (GraphQLFieldsContainer) type;
+            for (GraphQLFieldDefinition field : owner.getFieldDefinitions()) {
+                String coordinate = owner.getName() + "." + field.getName();
+                String text = render(owner, field, coordinate, format);
                 entries.add(new CorpusEntry(
-                        coordinate, objectType.getName(), text, tokenMeter.count(text)));
+                        coordinate, owner.getName(), text, tokenMeter.count(text)));
             }
         }
         return entries;
     }
 
-    private String render(GraphQLObjectType owner, GraphQLFieldDefinition field,
+    private String render(GraphQLFieldsContainer owner, GraphQLFieldDefinition field,
                           String coordinate, CorpusFormat format) {
         String returnType = GraphQLTypeUtil.simplePrint(field.getType());
         String description = field.getDescription() == null ? "" : field.getDescription().strip();

@@ -25,11 +25,14 @@ schemanav:
     # bm25 (no external process) | embedding (needs Ollama running)
     backend: bm25
     top-k: 10
+    # Above zero, search returns only the hits that fit in this many tokens.
+    context-budget-tokens: 0
   tokens:
     # The fixed yardstick every token count in this project uses.
     encoding: O200K_BASE
   bench:
     file: benchmarks/moviedb-sample.tsv
+    budgets: [125, 250, 500, 1000, 2000]
 
 logging:
   level:
