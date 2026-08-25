@@ -39,17 +39,28 @@ mvn -q spring-boot:run -Dspring-boot.run.arguments=bench
 ## The embedding backend
 
 1. Install [Ollama](https://ollama.com) and pull the GraphQL-tuned embedding model
-   (see the class for the `Modelfile` built from the `q8_0` GGUF of
-   `xthor/Qwen3-Embedding-0.6B-GraphQL`), or use any embedding model Ollama serves.
-2. Set `schemanav.retrieval.backend: embedding` and the model name under
-   `spring.ai.ollama.embedding.options.model` in `application.yaml`.
-3. Re-run the same commands; the benchmark table now measures that model.
+   straight from Hugging Face, then give it the name the configuration expects:
+
+   ```bash
+   ollama pull hf.co/xthor/Qwen3-Embedding-0.6B-GraphQL:Q8_0
+   ollama cp hf.co/xthor/Qwen3-Embedding-0.6B-GraphQL:Q8_0 qwen3-graphql-embedder
+   ```
+
+   Any other embedding model Ollama serves works too; set its name under
+   `spring.ai.ollama.embedding.options.model`.
+2. Run any command with `--schemanav.retrieval.backend=embedding` (or set it in
+   `application.yaml`).
+
+One detail the code handles for you, reproduced from the model's
+sentence-transformers configuration: the model is instruction-tuned, so questions are
+embedded with an instruction prefix (`schemanav.retrieval.query-prefix`) while corpus
+entries are embedded plain. Removing the prefix silently degrades ranking.
 
 ## Status
 
-Scaffold. Working today: schema loading (SDL file or introspection), corpus generation
-in three formats with token accounting, the Lucene BM25 backend, the embedding backend
-against a running Ollama, and the benchmark harness with a Movie DB smoke-test set.
-Still to come, tracked in the class spec: the Working Group benchmark data for the
-large schemas, the query/document prompt handling for the fine-tuned model, and the
-search/introspect/execute agent loop with live token spend.
+Working today, all verified by running: schema loading (SDL file or introspection),
+corpus generation in three formats with token accounting, the Lucene BM25 backend,
+the embedding backend against a local Ollama serving the GraphQL fine-tune (with the
+query/document prompt handling), and the benchmark harness with a Movie DB smoke-test
+set. Still to come, tracked in the class spec: the Working Group benchmark data for
+the large schemas and the search/introspect/execute agent loop with live token spend.
