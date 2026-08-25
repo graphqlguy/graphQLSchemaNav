@@ -1,5 +1,8 @@
 package com.graphqlguy.schemanav;
 
+import com.graphqlguy.schemanav.agent.AgentRunner;
+import com.graphqlguy.schemanav.agent.AgentTools;
+import com.graphqlguy.schemanav.agent.TokenLedger;
 import com.graphqlguy.schemanav.bench.BenchmarkRunner;
 import com.graphqlguy.schemanav.bench.LabelledQuery;
 import com.graphqlguy.schemanav.config.SchemaNavProperties;
@@ -11,6 +14,8 @@ import com.graphqlguy.schemanav.retrieval.SearchHit;
 import com.graphqlguy.schemanav.schema.SchemaSource;
 import com.graphqlguy.schemanav.tokens.TokenMeter;
 import graphql.schema.GraphQLSchema;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -48,14 +53,17 @@ public class SchemaNavApplication {
                                CorpusGenerator corpusGenerator,
                                SearchBackend backend,
                                BenchmarkRunner benchmarkRunner,
-                               TokenMeter tokenMeter) {
+                               TokenMeter tokenMeter,
+                               ObjectProvider<ChatModel> chatModels,
+                               org.springframework.core.env.Environment environment) {
         return args -> {
             if (args.length == 0) {
                 System.out.println("""
                         Usage:
                           corpus              corpus statistics per format
                           search <question>   one query against the configured backend
-                          bench [file]        labelled-query benchmark (accuracy and tokens)""");
+                          bench [file]        labelled-query benchmark (accuracy and tokens)
+                          agent <task>        run the search/introspect/execute loop with live token spend""");
                 return;
             }
             GraphQLSchema schema = schemaSource.load();
@@ -124,6 +132,33 @@ public class SchemaNavApplication {
                     BenchmarkRunner.Result result = benchmarkRunner.run(
                             backend, queries, properties.getBench().getBudgets());
                     System.out.println(benchmarkRunner.format(result));
+                }
+                case "agent" -> {
+                    String task = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+                    if (task.isBlank()) {
+                        System.out.println("agent needs a task, e.g.: agent find repositories"
+                                + " with the most open issues");
+                        return;
+                    }
+                    ChatModel chatModel = chatModels.getIfAvailable();
+                    if (chatModel == null) {
+                        System.out.println("No chat model is configured. Start Ollama and check"
+                                + " spring.ai.ollama.chat.* in application.yaml.");
+                        return;
+                    }
+                    List<CorpusEntry> corpus = corpusGenerator.generate(schema, format);
+                    backend.index(corpus);
+                    long fullSchemaTokens = corpus.stream().mapToLong(CorpusEntry::tokenCount).sum();
+                    System.out.println("schema  : " + schemaSource.describe());
+                    System.out.println("backend : " + backend.name() + ", corpus format " + format);
+                    System.out.println("task    : " + task);
+                    System.out.println();
+                    TokenLedger ledger = new TokenLedger();
+                    AgentTools tools = new AgentTools(schema, backend, tokenMeter, ledger, properties);
+                    String chatModelName = environment.getProperty(
+                            "spring.ai.ollama.chat.options.model", "qwen3:8b");
+                    new AgentRunner(chatModel, chatModelName, properties)
+                            .run(task, tools, ledger, fullSchemaTokens);
                 }
                 default -> System.out.println("Unknown command: " + command);
             }

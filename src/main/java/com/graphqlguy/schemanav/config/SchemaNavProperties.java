@@ -16,12 +16,16 @@ public class SchemaNavProperties {
     private final Retrieval retrieval = new Retrieval();
     private final Tokens tokens = new Tokens();
     private final Bench bench = new Bench();
+    private final Agent agent = new Agent();
+    private final Execute execute = new Execute();
 
     public Schema getSchema() { return schema; }
     public Corpus getCorpus() { return corpus; }
     public Retrieval getRetrieval() { return retrieval; }
     public Tokens getTokens() { return tokens; }
     public Bench getBench() { return bench; }
+    public Agent getAgent() { return agent; }
+    public Execute getExecute() { return execute; }
 
     public static class Schema {
         /**
@@ -82,6 +86,24 @@ public class SchemaNavProperties {
         private String encoding = "O200K_BASE";
         public String getEncoding() { return encoding; }
         public void setEncoding(String encoding) { this.encoding = encoding; }
+    }
+
+    public static class Agent {
+        /** Upper bound on model calls per task; the loop stops there regardless. */
+        private int maxSteps = 8;
+        public int getMaxSteps() { return maxSteps; }
+        public void setMaxSteps(int maxSteps) { this.maxSteps = maxSteps; }
+    }
+
+    public static class Execute {
+        /**
+         * A live GraphQL endpoint the executeGraphql tool posts validated operations to.
+         * Blank (the default) means validate-only, which is the honest mode for schemas
+         * like GitHub's whose endpoint needs authentication.
+         */
+        private String endpoint = "";
+        public String getEndpoint() { return endpoint; }
+        public void setEndpoint(String endpoint) { this.endpoint = endpoint; }
     }
 
     public static class Bench {
