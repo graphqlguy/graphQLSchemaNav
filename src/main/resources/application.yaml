@@ -11,7 +11,9 @@ spring:
           # Swap freely: any embedding model Ollama serves works here.
           model: qwen3-graphql-embedder
       chat:
-        enabled: false
+        options:
+          # The agent loop's reasoning model; any tool-calling model Ollama serves.
+          model: qwen3:8b
 
 schemanav:
   schema:
