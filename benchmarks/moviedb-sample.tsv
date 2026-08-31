@@ -1,0 +1,13 @@
+# One labelled query per line: natural-language question <TAB> expected Type.field
+# A tiny smoke-test set for the Movie DB schema; the real evaluation uses the
+# AI Working Group benchmark data over production-scale schemas.
+Which movies from the 1990s have a high rating?	Query.movies
+When did this movie come out?	Movie.releaseYear
+Who directed this film?	Movie.directors
+What do viewers think of this movie?	Movie.reviews
+Find anything called Godfather, movie, show, or person	Query.search
+Put this film on my list to watch later	Mutation.addToWatchlist
+How many seasons does the show have?	TvShow.seasons
+What else did this actor play in?	Person.filmography
+Give this movie eight stars with a short comment	Mutation.addReview
+What is on my list to watch?	Query.myWatchlist
