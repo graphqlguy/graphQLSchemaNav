@@ -1,0 +1,6 @@
+target/
+.idea/
+*.iml
+.DS_Store
+# Fetched on demand by scripts/fetch-github-schema.sh; check terms before committing.
+schemas/github.graphqls

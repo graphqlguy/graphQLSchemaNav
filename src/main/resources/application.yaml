@@ -1,0 +1,36 @@
+spring:
+  main:
+    web-application-type: none
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      embedding:
+        options:
+          # The GraphQL-tuned fine-tune once created locally, see README:
+          #   ollama create qwen3-graphql-embedder -f Modelfile
+          # Swap freely: any embedding model Ollama serves works here.
+          model: qwen3-graphql-embedder
+      chat:
+        enabled: false
+
+schemanav:
+  schema:
+    # A path to an SDL file, or an http(s) endpoint URL to introspect.
+    # Try: schemas/github.graphqls after running scripts/fetch-github-schema.sh
+    source: schemas/moviedb.graphqls
+  corpus:
+    # RAW | GLOSS | SDL, see CorpusFormat for what each means.
+    format: GLOSS
+  retrieval:
+    # bm25 (no external process) | embedding (needs Ollama running)
+    backend: bm25
+    top-k: 10
+  tokens:
+    # The fixed yardstick every token count in this project uses.
+    encoding: O200K_BASE
+  bench:
+    file: benchmarks/moviedb-sample.tsv
+
+logging:
+  level:
+    root: warn

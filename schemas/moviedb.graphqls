@@ -1,0 +1,152 @@
+"""
+The Movie Database schema from the graphQLGuy courses, reduced to its navigable core.
+It is deliberately small: small enough that dynamic discovery is overkill for it,
+which is exactly the contrast the class teaches against a GitHub-scale schema.
+"""
+type Query {
+    "Look up a single movie by its identifier."
+    movie(id: ID!): Movie
+
+    "List movies, optionally filtered by year range and minimum rating."
+    movies(filter: MovieFilter, first: Int, after: String): MovieConnection!
+
+    "Look up a single person (actor or director) by identifier."
+    person(id: ID!): Person
+
+    "Look up a single TV show by its identifier."
+    tvShow(id: ID!): TvShow
+
+    "Full-text search across movies, TV shows, and people."
+    search(query: String!): [SearchResult!]!
+
+    "The watchlist of the currently authenticated user."
+    myWatchlist: [WatchlistEntry!]!
+}
+
+type Mutation {
+    "Create a new movie with the given input."
+    createMovie(input: CreateMovieInput!): CreateMovieResponse!
+
+    "Add a movie or TV show to the current user's watchlist."
+    addToWatchlist(subject: WatchlistSubjectInput!, status: WatchStatus): WatchlistEntry!
+
+    "Post a review for a movie."
+    addReview(movieId: ID!, rating: Int!, comment: String): Review!
+}
+
+"A feature film in the catalog."
+type Movie {
+    id: ID!
+    "The film's display title."
+    title: String!
+    "Release year, four digits."
+    releaseYear: Int!
+    "Average review rating from 1 to 10, null while unreviewed."
+    rating: Float
+    "URL of the poster image, null when none was uploaded."
+    posterUrl: String
+    "The people credited as cast, in billing order."
+    cast: [Person!]!
+    "The people credited as directors."
+    directors: [Person!]!
+    "Reviews posted for this movie, newest first."
+    reviews: [Review!]!
+}
+
+"A television show in the catalog."
+type TvShow {
+    id: ID!
+    "The show's display title."
+    title: String!
+    "Year the first season aired."
+    firstAired: Int!
+    "Number of seasons released so far."
+    seasons: Int!
+    "The people credited as main cast."
+    cast: [Person!]!
+}
+
+"An actor or director."
+type Person {
+    id: ID!
+    "The person's full professional name."
+    name: String!
+    "Year of birth, null when unknown."
+    birthYear: Int
+    "Movies this person appeared in."
+    filmography: [Movie!]!
+}
+
+"A user-submitted review of a movie."
+type Review {
+    id: ID!
+    "Star rating from 1 to 10."
+    rating: Int!
+    "Free-text comment, null when the reviewer only rated."
+    comment: String
+    "When the review was created, ISO-8601."
+    createdAt: String!
+}
+
+"One item on a user's watchlist."
+type WatchlistEntry {
+    id: ID!
+    "The movie or TV show this entry refers to."
+    subject: SearchResult!
+    "Whether the user wants to watch it or has watched it."
+    status: WatchStatus!
+}
+
+"Cursor-based page of movies."
+type MovieConnection {
+    edges: [MovieEdge!]!
+    pageInfo: PageInfo!
+    "Total number of movies matching the filter."
+    totalCount: Int!
+}
+
+type MovieEdge {
+    node: Movie!
+    cursor: String!
+}
+
+"Standard Relay-style pagination info."
+type PageInfo {
+    hasNextPage: Boolean!
+    endCursor: String
+}
+
+"Result type for createMovie, carrying the movie or a list of user errors."
+type CreateMovieResponse {
+    movie: Movie
+    userErrors: [UserError!]!
+}
+
+"A user-correctable problem with an input."
+type UserError {
+    message: String!
+    field: String
+}
+
+union SearchResult = Movie | TvShow | Person
+
+enum WatchStatus {
+    WANT_TO_WATCH
+    WATCHED
+}
+
+input MovieFilter {
+    minYear: Int
+    maxYear: Int
+    minRating: Float
+}
+
+input CreateMovieInput {
+    title: String!
+    releaseYear: Int!
+}
+
+input WatchlistSubjectInput {
+    movieId: ID
+    tvShowId: ID
+}
