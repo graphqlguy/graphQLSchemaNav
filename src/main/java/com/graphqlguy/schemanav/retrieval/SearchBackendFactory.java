@@ -31,7 +31,7 @@ public class SearchBackendFactory {
                             + " Start Ollama and check spring.ai.ollama.* in application.yaml.");
                 }
                 String modelName = environment.getProperty(
-                        "spring.ai.ollama.embedding.options.model", "ollama default");
+                        "spring.ai.ollama.embedding.model", "ollama default");
                 yield new EmbeddingBackend(model, modelName,
                         properties.getRetrieval().getQueryPrefix(),
                         properties.getRetrieval().getDocumentPrefix());
