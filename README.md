@@ -47,9 +47,14 @@ mvn -q spring-boot:run -Dspring-boot.run.arguments=bench
    ```
 
    Any other embedding model Ollama serves works too; set its name under
-   `spring.ai.ollama.embedding.options.model`.
-2. Run any command with `--schemanav.retrieval.backend=embedding` (or set it in
-   `application.yaml`).
+   `spring.ai.ollama.embedding.model`.
+2. Run any command with `--schemanav.retrieval.backend=embedding` among its
+   arguments (or set the backend in `application.yaml`):
+
+   ```bash
+   mvn -q spring-boot:run \
+     -Dspring-boot.run.arguments="bench --schemanav.retrieval.backend=embedding"
+   ```
 
 One detail the code handles for you, reproduced from the model's
 sentence-transformers configuration: the model is instruction-tuned, so questions are
@@ -63,7 +68,7 @@ mvn -q spring-boot:run -Dspring-boot.run.arguments="agent get the titles of the 
 ```
 
 This runs the search/introspect/execute pattern end to end with a local chat model
-(any tool-calling model Ollama serves; `spring.ai.ollama.chat.options.model`). The
+(any tool-calling model Ollama serves; `spring.ai.ollama.chat.model`). The
 loop is driven by hand instead of letting the framework execute tools invisibly,
 because watching the mechanism is the point. What you see, turn by turn:
 

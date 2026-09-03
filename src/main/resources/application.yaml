@@ -5,15 +5,13 @@ spring:
     ollama:
       base-url: http://localhost:11434
       embedding:
-        options:
-          # The GraphQL-tuned fine-tune once created locally, see README:
-          #   ollama create qwen3-graphql-embedder -f Modelfile
-          # Swap freely: any embedding model Ollama serves works here.
-          model: qwen3-graphql-embedder
+        # The GraphQL-tuned fine-tune once created locally, see README:
+        #   ollama create qwen3-graphql-embedder -f Modelfile
+        # Swap freely: any embedding model Ollama serves works here.
+        model: qwen3-graphql-embedder
       chat:
-        options:
-          # The agent loop's reasoning model; any tool-calling model Ollama serves.
-          model: qwen3:8b
+        # The agent loop's reasoning model; any tool-calling model Ollama serves.
+        model: qwen3:8b
 
 schemanav:
   schema:

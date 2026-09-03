@@ -16,14 +16,13 @@ import com.graphqlguy.schemanav.tokens.TokenMeter;
 import graphql.schema.GraphQLSchema;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -48,7 +47,7 @@ public class SchemaNavApplication {
     }
 
     @Bean
-    CommandLineRunner commands(SchemaNavProperties properties,
+    ApplicationRunner commands(SchemaNavProperties properties,
                                SchemaSource schemaSource,
                                CorpusGenerator corpusGenerator,
                                SearchBackend backend,
@@ -57,7 +56,10 @@ public class SchemaNavApplication {
                                ObjectProvider<ChatModel> chatModels,
                                org.springframework.core.env.Environment environment) {
         return args -> {
-            if (args.length == 0) {
+            // Non-option arguments only, so that a --schemanav.* override passed on the
+            // command line configures the run without becoming part of the question.
+            List<String> words = args.getNonOptionArgs();
+            if (words.isEmpty()) {
                 System.out.println("""
                         Usage:
                           corpus              corpus statistics per format
@@ -68,7 +70,7 @@ public class SchemaNavApplication {
             }
             GraphQLSchema schema = schemaSource.load();
             CorpusFormat format = properties.getCorpus().getFormat();
-            String command = args[0];
+            String command = words.get(0);
 
             switch (command) {
                 case "corpus" -> {
@@ -81,8 +83,7 @@ public class SchemaNavApplication {
                     }
                 }
                 case "search" -> {
-                    String question = String.join(" ",
-                            Arrays.copyOfRange(args, 1, args.length));
+                    String question = String.join(" ", words.subList(1, words.size()));
                     if (question.isBlank()) {
                         System.out.println("search needs a question, e.g.: search movies with a high rating");
                         return;
@@ -121,7 +122,8 @@ public class SchemaNavApplication {
                     }
                 }
                 case "bench" -> {
-                    Path file = Path.of(args.length > 1 ? args[1] : properties.getBench().getFile());
+                    Path file = Path.of(words.size() > 1
+                            ? words.get(1) : properties.getBench().getFile());
                     List<LabelledQuery> queries = benchmarkRunner.load(file);
                     List<CorpusEntry> corpus = corpusGenerator.generate(schema, format);
                     backend.index(corpus);
@@ -134,7 +136,7 @@ public class SchemaNavApplication {
                     System.out.println(benchmarkRunner.format(result));
                 }
                 case "agent" -> {
-                    String task = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+                    String task = String.join(" ", words.subList(1, words.size()));
                     if (task.isBlank()) {
                         System.out.println("agent needs a task, e.g.: agent find repositories"
                                 + " with the most open issues");
@@ -156,7 +158,7 @@ public class SchemaNavApplication {
                     TokenLedger ledger = new TokenLedger();
                     AgentTools tools = new AgentTools(schema, backend, tokenMeter, ledger, properties);
                     String chatModelName = environment.getProperty(
-                            "spring.ai.ollama.chat.options.model", "qwen3:8b");
+                            "spring.ai.ollama.chat.model", "qwen3:8b");
                     new AgentRunner(chatModel, chatModelName, properties)
                             .run(task, tools, ledger, fullSchemaTokens);
                 }
